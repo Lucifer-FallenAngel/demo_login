@@ -1,12 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const upload = require("../middleware/upload");
-const studentController = require("../controllers/student_controller");
+const controller = require("../controller/student_controller");
 
-router.post(
-  "/create",
-  upload.single("profile"),
-  studentController.createStudent
-);
+router.get("/pdfs/:studentId", controller.getStudentPdfs);
+router.post("/pdf-view", controller.trackPdfView);
 
 module.exports = router;

@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:learning/student_home.dart';
 
-import 'create_account.dart';
-import 'student_dashboard.dart';
+import 'create_student.dart';
 import 'parent_dashboard.dart';
 
 class LoginPage extends StatefulWidget {
@@ -24,6 +24,12 @@ class _LoginPageState extends State<LoginPage> {
   final String baseUrl = "http://10.0.2.2:3000";
 
   Future<void> login() async {
+    if (emailController.text.trim().isEmpty ||
+        passwordController.text.trim().isEmpty) {
+      _showError("Please enter email and password");
+      return;
+    }
+
     setState(() => loading = true);
 
     final url = isStudent
@@ -31,23 +37,25 @@ class _LoginPageState extends State<LoginPage> {
         : "$baseUrl/api/auth/parent-login";
 
     try {
-      final res = await http.post(
+      final response = await http.post(
         Uri.parse(url),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "email": emailController.text,
+          "email": emailController.text.trim(),
           "password": passwordController.text,
         }),
       );
 
-      final data = jsonDecode(res.body);
+      final data = jsonDecode(response.body);
 
-      if (res.statusCode == 200 && data["success"] == true) {
+      if (response.statusCode == 200 &&
+          data is Map &&
+          data["success"] == true) {
         if (isStudent) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => StudentDashboard(studentData: data["student"]),
+              builder: (_) => StudentHomePage(student: data["student"]),
             ),
           );
         } else {
@@ -62,7 +70,7 @@ class _LoginPageState extends State<LoginPage> {
         _showError(data["message"] ?? "Login failed");
       }
     } catch (e) {
-      _showError("Server not reachable");
+      _showError("Unable to connect to server");
     }
 
     setState(() => loading = false);
@@ -189,7 +197,7 @@ class _LoginPageState extends State<LoginPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const CreateAccountPage(),
+                      builder: (_) => const CreateStudentPage(),
                     ),
                   );
                 },
