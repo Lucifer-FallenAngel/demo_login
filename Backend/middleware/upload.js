@@ -18,12 +18,26 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     let folder = "uploads/others";
 
-    if (file.fieldname === "profile") {
-      folder = "uploads/profiles";
-    } else if (file.fieldname === "pdf") {
-      folder = "uploads/pdfs";
-    } else if (file.fieldname === "thumbnail") {
-      folder = "uploads/thumbnails";
+    switch (file.fieldname) {
+      case "profile":
+        folder = "uploads/profiles";
+        break;
+
+      case "pdf":
+        folder = "uploads/pdfs";
+        break;
+
+      case "pdf_thumbnail":
+        folder = "uploads/thumbnails";
+        break;
+
+      case "video":
+        folder = "uploads/videos";
+        break;
+
+      case "video_thumbnail":
+        folder = "uploads/video_thumbnails";
+        break;
     }
 
     ensureDir(folder);
@@ -33,7 +47,6 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     const uniqueName =
       Date.now() + "-" + Math.round(Math.random() * 1e9);
-
     cb(null, uniqueName + path.extname(file.originalname));
   },
 });
@@ -44,15 +57,17 @@ const storage = multer.diskStorage({
 const fileFilter = (req, file, cb) => {
   const ext = path.extname(file.originalname).toLowerCase();
 
-  // Allowed image types
   const imageTypes = [".jpg", ".jpeg", ".png", ".webp"];
-
-  // Allowed pdf
+  const videoTypes = [".mp4", ".mov", ".mkv", ".avi"];
   const pdfTypes = [".pdf"];
 
-  if (file.fieldname === "thumbnail") {
+  if (
+    file.fieldname === "profile" ||
+    file.fieldname === "pdf_thumbnail" ||
+    file.fieldname === "video_thumbnail"
+  ) {
     if (!imageTypes.includes(ext)) {
-      return cb(new Error("Thumbnail must be an image"));
+      return cb(new Error("Only image files are allowed"));
     }
   }
 
@@ -62,9 +77,9 @@ const fileFilter = (req, file, cb) => {
     }
   }
 
-  if (file.fieldname === "profile") {
-    if (!imageTypes.includes(ext)) {
-      return cb(new Error("Profile must be an image"));
+  if (file.fieldname === "video") {
+    if (!videoTypes.includes(ext)) {
+      return cb(new Error("Only video files are allowed"));
     }
   }
 
@@ -78,7 +93,7 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50 MB max
+    fileSize: 100 * 1024 * 1024, // 100 MB
   },
 });
 

@@ -25,6 +25,7 @@ app.use("/api/auth", require("./routes/auth_routes"));
 app.use("/api/admin", require("./routes/admin_routes"));
 app.use("/api/pdf", require("./routes/pdf_routes"));
 app.use("/api/student", require("./routes/student_routes"));
+app.use("/api/video", require("./routes/video_routes"));
 
 
 /* ============================

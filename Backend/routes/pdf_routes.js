@@ -7,7 +7,7 @@ router.post(
   "/upload",
   upload.fields([
     { name: "pdf", maxCount: 1 },
-    { name: "thumbnail", maxCount: 1 },
+    { name: "pdf_thumbnail", maxCount: 1 },
   ]),
   controller.uploadPdf
 );

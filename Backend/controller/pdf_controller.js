@@ -24,7 +24,7 @@ exports.uploadPdf = async (req, res) => {
       class_key: classKey,
       class_label: class_name,
       pdf_path: `/uploads/pdfs/${req.files.pdf[0].filename}`,
-      thumbnail_path: `/uploads/thumbnails/${req.files.thumbnail[0].filename}`,
+      thumbnail_path: `/uploads/thumbnails/${req.files.pdf_thumbnail[0].filename}`,
     });
 
     res.json({ success: true, pdf });

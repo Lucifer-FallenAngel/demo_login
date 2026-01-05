@@ -75,3 +75,59 @@ exports.getPdfStats = async (req, res) => {
 
   res.json({ success: true, stats });
 };
+
+exports.getStudentVideos = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    const student = await db.Account.findByPk(studentId);
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found",
+      });
+    }
+
+    const videos = await db.Video.findAll({
+      where: {
+        class_name: student.studying,
+      },
+      order: [["createdAt", "DESC"]],
+    });
+
+    res.json({
+      success: true,
+      class: student.studying,
+      videos,
+    });
+  } catch (err) {
+    console.error("Get student videos error:", err);
+    res.status(500).json({ success: false });
+  }
+};
+
+exports.trackVideoView = async (req, res) => {
+  try {
+    const { student_id, video_id } = req.body;
+
+    let record = await db.VideoView.findOne({
+      where: { student_id, video_id },
+    });
+
+    if (record) {
+      record.watch_count += 1;
+      await record.save();
+    } else {
+      await db.VideoView.create({
+        student_id,
+        video_id,
+        watch_count: 1,
+      });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Track video view error:", err);
+    res.status(500).json({ success: false });
+  }
+};

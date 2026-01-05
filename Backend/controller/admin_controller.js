@@ -1,21 +1,29 @@
 const db = require("../models");
+
 const Account = db.Account;
+const Pdf = db.Pdf;
+const Video = db.Video;
 
 /* ===============================
    DASHBOARD STATS
 ================================ */
 exports.getStats = async (req, res) => {
   try {
-    const count = await Account.count();
+    const totalStudents = await Account.count();
+    const totalPdfs = await Pdf.count();
+    const totalVideos = await Video.count();
 
-    res.json({
+    return res.json({
       success: true,
-      total_students: count,
+      total_students: totalStudents,
+      total_pdfs: totalPdfs,
+      total_videos: totalVideos,
     });
-  } catch (err) {
-    res.status(500).json({
+  } catch (error) {
+    console.error("Admin stats error:", error);
+    return res.status(500).json({
       success: false,
-      message: "Failed to fetch stats",
+      message: "Failed to load dashboard stats",
     });
   }
 };
@@ -41,12 +49,13 @@ exports.getAccounts = async (req, res) => {
       has_parent: !!a.parent_email,
     }));
 
-    res.json({
+    return res.json({
       success: true,
       accounts: formatted,
     });
   } catch (err) {
-    res.status(500).json({
+    console.error("Get accounts error:", err);
+    return res.status(500).json({
       success: false,
       message: "Unable to fetch accounts",
     });
@@ -69,7 +78,7 @@ exports.getAccountById = async (req, res) => {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       profile: {
         id: account.id,
@@ -90,31 +99,10 @@ exports.getAccountById = async (req, res) => {
       },
     });
   } catch (err) {
-    res.status(500).json({
+    console.error("Get account error:", err);
+    return res.status(500).json({
       success: false,
       message: "Failed to load account",
     });
   }
 };
-
-exports.getStats = async (req, res) => {
-  try {
-    const totalStudents = await db.Account.count();
-
-    const totalPdfs = await db.Pdf.count();
-
-    return res.json({
-      success: true,
-      total_students: totalStudents,
-      total_pdfs: totalPdfs,
-    });
-  } catch (error) {
-    console.error("Admin stats error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to load dashboard stats",
-    });
-  }
-};
-
-

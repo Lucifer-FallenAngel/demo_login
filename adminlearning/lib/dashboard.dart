@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'list_account.dart';
 import 'pdf_added.dart';
+import 'add_videos.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -16,6 +17,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   int totalAccounts = 0;
   int totalPdfs = 0;
+  int totalVideos = 0;
   bool loading = true;
 
   @override
@@ -33,6 +35,7 @@ class _DashboardPageState extends State<DashboardPage> {
         setState(() {
           totalAccounts = data["total_students"];
           totalPdfs = data["total_pdfs"];
+          totalVideos = data["total_videos"];
           loading = false;
         });
       } else {
@@ -80,20 +83,29 @@ class _DashboardPageState extends State<DashboardPage> {
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  statCard("Number of Accounts created : $totalAccounts", () {
-                    Navigator.push(
+                  statCard(
+                    "Number of Accounts created : $totalAccounts",
+                    () => Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => const ListAccountPage(),
                       ),
-                    );
-                  }),
-                  statCard("PDF's Added : $totalPdfs", () {
-                    Navigator.push(
+                    ),
+                  ),
+                  statCard(
+                    "PDF's Added : $totalPdfs",
+                    () => Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const PdfAddedPage()),
-                    );
-                  }),
+                    ),
+                  ),
+                  statCard(
+                    "Videos Added : $totalVideos",
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AddVideosPage()),
+                    ),
+                  ),
                 ],
               ),
             ),
