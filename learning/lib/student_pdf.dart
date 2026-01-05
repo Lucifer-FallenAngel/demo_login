@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:path_provider/path_provider.dart';
 
 class StudentPdfPage extends StatefulWidget {
   final Map<String, dynamic> student;
@@ -27,7 +30,6 @@ class _StudentPdfPageState extends State<StudentPdfPage> {
 
   Future<void> fetchPdfs() async {
     try {
-      // Get the full class string (e.g., "9th class" or "10th class")
       final rawClass = widget.student["studying"];
 
       if (rawClass == null || rawClass.toString().isEmpty) {
@@ -38,11 +40,8 @@ class _StudentPdfPageState extends State<StudentPdfPage> {
         return;
       }
 
-      // Encode the string (e.g., "9th class" becomes "9th%20class") to handle spaces
       final classQuery = Uri.encodeComponent(rawClass.toString());
       final url = "$baseUrl/api/pdf/class/$classQuery";
-
-      debugPrint("📘 Fetching PDFs from: $url");
 
       final response = await http.get(Uri.parse(url));
 
@@ -69,7 +68,6 @@ class _StudentPdfPageState extends State<StudentPdfPage> {
         });
       }
     } catch (e) {
-      debugPrint("❌ PDF FETCH ERROR: $e");
       setState(() {
         loading = false;
         errorMessage = "Unable to load PDFs";
@@ -79,16 +77,14 @@ class _StudentPdfPageState extends State<StudentPdfPage> {
 
   Future<void> openPdf(Map pdf) async {
     final pdfPath = pdf["pdf_path"];
-
     if (pdfPath == null) return;
 
     final pdfUrl = "$baseUrl$pdfPath";
-    // Track view (non-blocking)
+
+    // Track PDF view (non-blocking)
     try {
       await http.post(
-        Uri.parse(
-          "$baseUrl/api/student/pdf-view",
-        ), // Updated to match your route
+        Uri.parse("$baseUrl/api/student/pdf-view"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "student_id": widget.student["id"],
@@ -97,10 +93,13 @@ class _StudentPdfPageState extends State<StudentPdfPage> {
       );
     } catch (_) {}
 
-    final uri = Uri.parse(pdfUrl);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            PdfViewerPage(pdfUrl: pdfUrl, title: pdf["title"] ?? "PDF"),
+      ),
+    );
   }
 
   @override
@@ -108,7 +107,7 @@ class _StudentPdfPageState extends State<StudentPdfPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF1B102D),
       appBar: AppBar(
-        title: const Text("PDF's"),
+        title: const Text("PDFs"),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -154,21 +153,14 @@ class _StudentPdfPageState extends State<StudentPdfPage> {
                         ),
                       ),
                       const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              pdf["title"] ?? "",
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const Icon(Icons.download, color: Colors.white),
-                        ],
+                      Text(
+                        pdf["title"] ?? "",
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -183,6 +175,78 @@ class _StudentPdfPageState extends State<StudentPdfPage> {
       color: Colors.black26,
       alignment: Alignment.center,
       child: const Icon(Icons.picture_as_pdf, color: Colors.white70, size: 42),
+    );
+  }
+}
+
+/* ============================================================
+   IN-APP PDF VIEWER (NO EXTERNAL APPS)
+============================================================ */
+
+class PdfViewerPage extends StatefulWidget {
+  final String pdfUrl;
+  final String title;
+
+  const PdfViewerPage({super.key, required this.pdfUrl, required this.title});
+
+  @override
+  State<PdfViewerPage> createState() => _PdfViewerPageState();
+}
+
+class _PdfViewerPageState extends State<PdfViewerPage> {
+  String? localPath;
+  bool loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    downloadPdf();
+  }
+
+  Future<void> downloadPdf() async {
+    try {
+      final response = await http.get(Uri.parse(widget.pdfUrl));
+      final dir = await getTemporaryDirectory();
+
+      final file = File(
+        "${dir.path}/${DateTime.now().millisecondsSinceEpoch}.pdf",
+      );
+
+      await file.writeAsBytes(response.bodyBytes);
+
+      setState(() {
+        localPath = file.path;
+        loading = false;
+      });
+    } catch (e) {
+      setState(() => loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        title: Text(widget.title),
+        backgroundColor: Colors.transparent,
+      ),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : localPath == null
+          ? const Center(
+              child: Text(
+                "Failed to load PDF",
+                style: TextStyle(color: Colors.white),
+              ),
+            )
+          : PDFView(
+              filePath: localPath!,
+              enableSwipe: true,
+              swipeHorizontal: true,
+              autoSpacing: true,
+              pageSnap: true,
+            ),
     );
   }
 }
